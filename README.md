@@ -38,7 +38,7 @@ trading_bot/
 ### 2. Clone & Install
 
 ```bash
-git clone <your-repo-url>
+git clone https://github.com/AnuragAgrahari04/Internshala-3.git
 cd trading_bot
 
 # Create a virtual environment (recommended)
@@ -165,7 +165,8 @@ Successful MARKET and LIMIT order activity is also written automatically to dedi
 - `logs/limit_order.log` — LIMIT order lifecycle entries
 
 ```json
-{"timestamp": "2026-03-14T13:34:11.723498+00:00", "level": "DEBUG", "logger": "bot.client", "message": "POST /fapi/v1/order \u2014 response", "order_type": "MARKET", "response": {"orderId": 12809540875, "symbol": "BTCUSDT", "status": "NEW", "clientOrderId": "m7FoHIgSJhZxHS8sgFQC7p", "price": "0.00", "avgPrice": "0.00", "origQty": "0.002", "executedQty": "0.000", "cumQty": "0.000", "cumQuote": "0.00000", "timeInForce": "GTC", "type": "MARKET", "reduceOnly": false, "closePosition": false, "side": "BUY", "positionSide": "BOTH", "stopPrice": "0.00", "workingType": "CONTRACT_PRICE", "priceProtect": false, "origType": "MARKET", "priceMatch": "NONE", "selfTradePreventionMode": "EXPIRE_MAKER", "goodTillDate": 0, "updateTime": 1773495251395}}
+{"timestamp": "2026-03-14T13:34:11.72+00:00", "level": "INFO", "logger": "bot.orders", 
+ "message": "MARKET order placed successfully", "order_id": 12809540875, "status": "FILLED"}
 ```
 
 The repository already includes example entries in those files, and any new MARKET or LIMIT orders will append to them automatically.
