@@ -1,9 +1,10 @@
 """
 logging_config.py
 -----------------
-Sets up dual logging:
+Sets up structured logging:
   - Human-readable console output (INFO+)
-  - Structured JSON file output (DEBUG+) → trading_bot.log
+    - Structured JSON file output (DEBUG+) → trading_bot.log
+    - Order-type specific JSON file output for MARKET and LIMIT orders
 """
 
 import logging
@@ -14,6 +15,20 @@ from pathlib import Path
 
 
 LOG_FILE = Path("trading_bot.log")
+LOGS_DIR = Path("logs")
+MARKET_LOG_FILE = LOGS_DIR / "market_order.log"
+LIMIT_LOG_FILE = LOGS_DIR / "limit_order.log"
+
+
+class OrderTypeFilter(logging.Filter):
+    """Allow records tagged with a specific order type."""
+
+    def __init__(self, order_type: str) -> None:
+        super().__init__()
+        self.order_type = order_type
+
+    def filter(self, record: logging.LogRecord) -> bool:
+        return getattr(record, "x_order_type", None) == self.order_type
 
 
 class JSONFormatter(logging.Formatter):
@@ -44,6 +59,7 @@ def setup_logging(log_file: Path = LOG_FILE, console_level: int = logging.INFO) 
     """
     root = logging.getLogger()
     root.setLevel(logging.DEBUG)           # capture everything; handlers filter
+    LOGS_DIR.mkdir(parents=True, exist_ok=True)
 
     # ── Console handler ────────────────────────────────────────────────────────
     console = logging.StreamHandler()
@@ -60,11 +76,25 @@ def setup_logging(log_file: Path = LOG_FILE, console_level: int = logging.INFO) 
     file_handler.setLevel(logging.DEBUG)
     file_handler.setFormatter(JSONFormatter())
 
+    market_handler = logging.FileHandler(MARKET_LOG_FILE, encoding="utf-8")
+    market_handler.setLevel(logging.DEBUG)
+    market_handler.setFormatter(JSONFormatter())
+    market_handler.addFilter(OrderTypeFilter("MARKET"))
+
+    limit_handler = logging.FileHandler(LIMIT_LOG_FILE, encoding="utf-8")
+    limit_handler.setLevel(logging.DEBUG)
+    limit_handler.setFormatter(JSONFormatter())
+    limit_handler.addFilter(OrderTypeFilter("LIMIT"))
+
     # Avoid duplicate handlers if called multiple times (e.g., in tests)
     if not root.handlers:
         root.addHandler(console)
         root.addHandler(file_handler)
+        root.addHandler(market_handler)
+        root.addHandler(limit_handler)
     else:
         root.handlers.clear()
         root.addHandler(console)
         root.addHandler(file_handler)
+        root.addHandler(market_handler)
+        root.addHandler(limit_handler)

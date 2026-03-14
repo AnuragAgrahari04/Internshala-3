@@ -20,6 +20,9 @@ python cli.py account
 
 # List open orders
 python cli.py open-orders --symbol BTCUSDT
+
+# Cancel an order
+python cli.py cancel-order --symbol BTCUSDT --order-id 123456789
 """
 
 from __future__ import annotations
@@ -222,6 +225,55 @@ def open_orders_cmd(
         )
 
     console.print(table)
+
+
+@app.command("cancel-order")
+def cancel_order_cmd(
+    symbol: str = typer.Option(..., "--symbol", "-s", help="Trading pair, e.g. BTCUSDT"),
+    order_id: int = typer.Option(..., "--order-id", help="Exchange order ID to cancel"),
+):
+    """Cancel an open order by symbol and order ID."""
+    req_table = Table(box=box.SIMPLE, show_header=False, padding=(0, 1))
+    req_table.add_column(style="dim cyan")
+    req_table.add_column(style="bold white")
+    req_table.add_row("Symbol", symbol.upper())
+    req_table.add_row("Order ID", str(order_id))
+
+    console.print(Panel(req_table, title="[bold yellow]▶ Cancel Request[/]", border_style="yellow"))
+
+    client = _get_client()
+    try:
+        result = client.cancel_order(symbol=symbol.upper(), order_id=order_id)
+    except BinanceAPIError as exc:
+        if exc.code == -1022:
+            console.print(
+                "\n[bold red]✗ Binance API Error:[/] Signature is invalid (code -1022).\n"
+                "Check that your [bold]BINANCE_API_KEY[/] and [bold]BINANCE_API_SECRET[/] are from "
+                "[bold]Binance Futures Testnet[/] and belong to the same key pair.\n"
+            )
+        else:
+            console.print(f"\n[bold red]✗ Binance API Error:[/] {exc}\n")
+        logger.error("Binance API error while canceling order: %s", exc, exc_info=True)
+        raise typer.Exit(code=3)
+    except Exception:
+        console.print("\n[bold red]✗ Unexpected Error:[/] Failed to cancel order.\n")
+        logger.exception("Unexpected error while canceling order")
+        raise typer.Exit(code=4)
+
+    res_table = Table(box=box.SIMPLE, show_header=False, padding=(0, 1))
+    res_table.add_column(style="dim cyan")
+    res_table.add_column(style="bold white")
+    res_table.add_row("Order ID", str(result.get("orderId", order_id)))
+    res_table.add_row("Symbol", result.get("symbol", symbol.upper()))
+    res_table.add_row("Side", result.get("side", "—"))
+    res_table.add_row("Type", result.get("type", "—"))
+    res_table.add_row("Status", result.get("status", "—"))
+    res_table.add_row("Orig Qty", result.get("origQty", "—"))
+    res_table.add_row("Executed Qty", result.get("executedQty", "—"))
+    res_table.add_row("Price", result.get("price", "—"))
+
+    console.print(Panel(res_table, title="[bold green]✓ Cancel Response[/]", border_style="green"))
+    console.print(f"\n[bold green]✓ Order canceled successfully![/]  ID: [white]{result.get('orderId', order_id)}[/]\n")
 
 
 # ── Entry point ───────────────────────────────────────────────────────────────

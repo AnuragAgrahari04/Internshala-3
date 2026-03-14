@@ -186,7 +186,10 @@ class BinanceFuturesClient:
         log_params = {k: v for k, v in params.items() if k != "signature"}
         logger.debug(
             "POST /fapi/v1/order — request params",
-            extra={"x_params": log_params},
+            extra={
+                "x_order_type": str(kwargs.get("type", "")).upper(),
+                "x_params": log_params,
+            },
         )
 
         resp = self._session.post(
@@ -199,7 +202,10 @@ class BinanceFuturesClient:
 
         logger.debug(
             "POST /fapi/v1/order — response",
-            extra={"x_response": data},
+            extra={
+                "x_order_type": str(kwargs.get("type", "")).upper(),
+                "x_response": data,
+            },
         )
         return data
 

@@ -113,6 +113,12 @@ python cli.py open-orders                    # all symbols
 python cli.py open-orders --symbol BTCUSDT   # filtered
 ```
 
+### Cancel an open order
+
+```bash
+python cli.py cancel-order --symbol BTCUSDT --order-id 123456789
+```
+
 ### Built-in help
 
 ```bash
@@ -154,15 +160,17 @@ python cli.py order --help
 Every run appends to `trading_bot.log` in the project root.  
 Each line is a self-contained JSON object — easy to ingest into any log aggregator (Datadog, CloudWatch, ELK).
 
+Successful MARKET and LIMIT order activity is also written automatically to dedicated files in `logs/`:
+- `logs/market_order.log` — MARKET order lifecycle entries
+- `logs/limit_order.log` — LIMIT order lifecycle entries
+
 ```json
 {"timestamp": "2025-03-14T10:05:01.489123+00:00", "level": "INFO", "logger": "bot.orders",
  "message": "MARKET order placed successfully", "order_id": 3951823011,
  "status": "FILLED", "executed_qty": "0.001", "avg_price": "84251.50000"}
 ```
 
-Sample log files are in the `logs/` directory:
-- `logs/market_order.log` — successful BUY MARKET order
-- `logs/limit_order.log`  — successful SELL LIMIT order (status: NEW, resting on book)
+The repository already includes example entries in those files, and any new MARKET or LIMIT orders will append to them automatically.
 
 ---
 

@@ -177,7 +177,12 @@ def place_market_order(
 
     logger.info(
         "Placing MARKET order",
-        extra={"x_symbol": symbol, "x_side": side, "x_qty": str(qty)},
+        extra={
+            "x_order_type": "MARKET",
+            "x_symbol": symbol,
+            "x_side": side,
+            "x_qty": str(qty),
+        },
     )
 
     _precheck_min_notional(
@@ -200,6 +205,7 @@ def place_market_order(
     logger.info(
         "MARKET order placed successfully",
         extra={
+            "x_order_type": "MARKET",
             "x_order_id": result.order_id,
             "x_status": result.status,
             "x_executed_qty": result.executed_qty,
@@ -227,6 +233,7 @@ def place_limit_order(
     logger.info(
         "Placing LIMIT order",
         extra={
+            "x_order_type": "LIMIT",
             "x_symbol": symbol,
             "x_side": side,
             "x_qty": str(qty),
@@ -258,6 +265,7 @@ def place_limit_order(
     logger.info(
         "LIMIT order placed successfully",
         extra={
+            "x_order_type": "LIMIT",
             "x_order_id": result.order_id,
             "x_status": result.status,
             "x_price": result.price,
@@ -288,6 +296,7 @@ def place_stop_market_order(
     logger.info(
         "Placing STOP_MARKET order",
         extra={
+            "x_order_type": "STOP_MARKET",
             "x_symbol": symbol,
             "x_side": side,
             "x_qty": str(qty),
@@ -309,7 +318,11 @@ def place_stop_market_order(
 
     logger.info(
         "STOP_MARKET order placed successfully",
-        extra={"x_order_id": result.order_id, "x_status": result.status},
+        extra={
+            "x_order_type": "STOP_MARKET",
+            "x_order_id": result.order_id,
+            "x_status": result.status,
+        },
     )
     return result
 
