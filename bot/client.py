@@ -93,11 +93,10 @@ class BinanceFuturesClient:
         session.mount("http://", adapter)
         return session
 
-    def _sign(self, params: dict) -> tuple[dict, str]:
+    def _sign(self, params: dict) -> dict:
         """
-        Build signed params and the exact encoded payload that must be sent.
-
-        Returning both avoids signature drift caused by downstream re-encoding.
+        Add timestamp, recvWindow, and HMAC signature to params.
+        Returns the complete signed params dict.
         """
         signed_params = {k: v for k, v in params.items() if v is not None}
         signed_params["timestamp"] = int(time.time() * 1000)
@@ -110,8 +109,7 @@ class BinanceFuturesClient:
             hashlib.sha256,
         ).hexdigest()
         signed_params["signature"] = signature
-        encoded_payload = f"{query_string}&signature={signature}"
-        return signed_params, encoded_payload
+        return signed_params
 
     def _headers(self) -> dict:
         return {
@@ -124,7 +122,7 @@ class BinanceFuturesClient:
         try:
             data = response.json()
         except ValueError:
-            response.raise_for_status()   # fallback for non-JSON error bodies
+            response.raise_for_status()
             return {}
 
         if not response.ok:
@@ -166,10 +164,15 @@ class BinanceFuturesClient:
 
     def get_account(self) -> dict:
         """Fetch futures account info (balances, positions)."""
-        _, signed_query = self._sign({})
+        signed_params = self._sign({})
         url = f"{self.base_url}/fapi/v2/account"
         logger.debug("GET account", extra={"x_url": url})
-        resp = self._session.get(url, params=signed_query, headers=self._headers(), timeout=DEFAULT_TIMEOUT)
+        resp = self._session.get(
+            url,
+            params=signed_params,
+            headers=self._headers(),
+            timeout=DEFAULT_TIMEOUT,
+        )
         return self._handle_response(resp)
 
     def place_order(self, **kwargs: Any) -> dict:
@@ -179,11 +182,11 @@ class BinanceFuturesClient:
         Keyword arguments are forwarded directly as form params after signing.
         Callers should use the helpers in orders.py rather than calling this directly.
         """
-        params, signed_body = self._sign(dict(kwargs))
+        signed_params = self._sign(dict(kwargs))
         url = f"{self.base_url}/fapi/v1/order"
 
         # Sanitise for logging: never log the signature itself
-        log_params = {k: v for k, v in params.items() if k != "signature"}
+        log_params = {k: v for k, v in signed_params.items() if k != "signature"}
         logger.debug(
             "POST /fapi/v1/order — request params",
             extra={
@@ -194,7 +197,7 @@ class BinanceFuturesClient:
 
         resp = self._session.post(
             url,
-            data=signed_body,
+            data=urlencode(signed_params),
             headers=self._headers(),
             timeout=DEFAULT_TIMEOUT,
         )
@@ -211,7 +214,7 @@ class BinanceFuturesClient:
 
     def cancel_order(self, symbol: str, order_id: int) -> dict:
         """Cancel an open order by orderId."""
-        _, signed_query = self._sign({"symbol": symbol, "orderId": order_id})
+        signed_params = self._sign({"symbol": symbol, "orderId": order_id})
         url = f"{self.base_url}/fapi/v1/order"
         logger.debug(
             "DELETE /fapi/v1/order",
@@ -219,7 +222,7 @@ class BinanceFuturesClient:
         )
         resp = self._session.delete(
             url,
-            params=signed_query,
+            params=signed_params,
             headers=self._headers(),
             timeout=DEFAULT_TIMEOUT,
         )
@@ -230,7 +233,12 @@ class BinanceFuturesClient:
         params: dict = {}
         if symbol:
             params["symbol"] = symbol
-        _, signed_query = self._sign(params)
+        signed_params = self._sign(params)
         url = f"{self.base_url}/fapi/v1/openOrders"
-        resp = self._session.get(url, params=signed_query, headers=self._headers(), timeout=DEFAULT_TIMEOUT)
+        resp = self._session.get(
+            url,
+            params=signed_params,
+            headers=self._headers(),
+            timeout=DEFAULT_TIMEOUT,
+        )
         return self._handle_response(resp)
